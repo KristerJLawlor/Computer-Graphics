@@ -1,0 +1,671 @@
+<!-- Krister Lawlor -->
+<!-- Computer Graphics -->
+<!-- 1/23/2022 -->
+<HTML lang="en">
+	<HEAD>
+		<META CHARSET="UTF-8">
+		<TITLE>2D Adventure</TITLE>
+		<SCRIPT>
+		
+		//setting boundaries for the grid
+		var MIN_X = 0;
+		var MIN_Y = 0;
+		var MAX_X = 7;
+		var MAX_Y = 7;
+		
+		//Mountains class
+		class Mountain
+		{
+			constructor(x, y)
+			{
+					//save grid coordinates
+					this.gridX = x;
+					this.gridY = y;
+					
+					this.render();
+			}
+			
+			render()
+			{		
+					//make brown base
+					var X = (this.gridX * 64) + 10;
+					var Y = (this.gridY * 64) + 50;
+					ctx.beginPath();
+					ctx.moveTo(X, Y+10);
+					ctx.lineTo((X)+40, Y+10);
+					ctx.lineTo((X+10),(Y)-40);
+					ctx.closePath();
+					ctx.lineWidth = 5;
+					ctx.strokeStyle = '#000000';
+					ctx.stroke();
+					ctx.fillStyle = '#940';
+					ctx.fill();
+					
+					//add white cap on mountain
+					ctx.beginPath();
+					ctx.moveTo(X+6, Y-20);
+					ctx.lineTo((X)+22, Y-20);
+					ctx.lineTo((X+10),(Y)-40);
+					ctx.closePath();
+					ctx.lineWidth = 5;
+					ctx.strokeStyle = '#000000';
+					ctx.stroke();
+					ctx.fillStyle = '#FFFFFF';
+					ctx.fill();
+			}
+		}
+		
+		//Cloud class
+		class Cloud
+		{
+			constructor(x, y)
+			{
+					//save grid coordinates
+					this.gridX = x;
+					this.gridY = y;
+			
+					this.render();
+			}
+			
+			render()
+			{
+				
+					var X = (this.gridX * 64);
+					var Y = (this.gridY * 64) + 30;
+                
+					//draw the cloud on the backdrop
+					ctx.beginPath();
+					ctx.moveTo(X, Y);
+					ctx.bezierCurveTo(X - 40/4, Y + 20/4, X - 40/4, Y + 70/4, X + 60/4, Y + 70/4);
+					ctx.bezierCurveTo(X + 80/4, Y + 100/4, X + 150/4, Y + 100/4, X + 170/4, Y + 70/4);
+					ctx.bezierCurveTo(X + 250/4, Y + 70/4, X + 250/4, Y + 40/4, X + 220/4, Y + 20/4);
+					ctx.bezierCurveTo(X + 260/4, Y - 40/4, X + 200/4, Y - 50/4, X + 170/4, Y - 30/4);
+					ctx.bezierCurveTo(X + 150/4, Y - 75/4, X + 80/4, Y - 60/4, X + 80/4, Y - 30/4);
+					ctx.bezierCurveTo(X + 30/4, Y - 75/4, X - 20/4, Y - 60/4, X, Y);
+					ctx.closePath();
+					ctx.lineWidth = 5;
+					ctx.fillStyle = '#FFFFFF';
+					ctx.fill();
+			}
+		}
+		
+		
+		
+			class Item
+			{
+				constructor(x, y)
+				{
+					this.uses = 1;
+					this.gridX = x;
+					this.gridY = y;
+					this.X = 64 * x;
+					this.Y = 64 * y;
+					this.PIC = new Image;
+					this.PIC.src = 'potion.png';
+					this.PIC.onload = ctx.drawImage(this.PIC, this.X, this.Y, 64, 64);
+				}
+				
+				updateItem()
+				{
+					if(myGame.hero.gridX == this.gridX && myGame.hero.gridY == this.gridY)
+					{
+						myGame.hero.HP = myGame.hero.MHP;
+						this.uses--;
+					}
+				}
+				
+				renderItem()
+				{
+					//check if the potion has been used
+					if(this.uses == 1)
+					{
+						//Render potion
+						ctx.drawImage(this.PIC, this.X, this.Y, 64, 64);
+						
+					}
+				}
+			}
+		
+		
+			//Character classes with update and render functions including the health bar
+			class Character
+			{
+				constructor()
+				{	
+					this.living = 1;
+				}
+				
+				healthBar()
+				{
+					//Will draw a black vertical rectangle representing MHP (max hit points)
+					//and another red rectangle inside representing HP (current hit points)
+					//to represent the health visually, we display the red over black with the 
+					//ratio this.HP / this.MHP
+					console.log("Inside healthBar()");
+					var X = (this.gridX * 64);
+					var Y = (this.gridY * 64);
+					
+                
+					//draw the back of the health bar
+					ctx.beginPath();
+					ctx.moveTo(X, Y);
+					ctx.fillStyle = '#000000';
+					ctx.fillRect(X, Y, 5, this.MHP/4);
+					ctx.closePath();
+					
+					ctx.beginPath();
+					ctx.moveTo(X, Y);
+					ctx.fillStyle = '#F00';
+					ctx.fillRect(X, Y, 5, (this.HP/4));
+					ctx.closePath();
+					
+				}
+				
+				moveRandom()
+				{
+					console.log("Inside moveRandom()");
+					
+					//get random # between 0 and 3
+					var Direction =  Math.floor(Math.random() * 4);
+					
+					//determine the desired movement
+					let movementx = 0;
+					let movementy = 0;
+					switch(Direction)
+					{
+						case 0:
+							movementx = -1;
+							break;
+						case 1:
+							movementx =  1;
+							break;
+						case 2:
+							movementy = -1;
+							break;
+						case 3:
+							movementy =  1;
+							break;
+						default:
+							break;
+					}
+					
+					//find out where we are moving to
+					let desiredx = this.gridX + movementx;
+					let desiredy = this.gridY + movementy;
+				
+					//evaluate the game borders
+					if (desiredy < MIN_Y || desiredy > MAX_Y || desiredx < MIN_X || desiredx > MAX_X)
+					{
+						// hit the edge of the map
+						return false;
+					}
+					
+					//evaluate obstacles
+					if (myGame.GameMap[desiredy][desiredx] != 0)
+					{
+						// hit an obstacle
+						return false;
+					}
+					
+					//evaluate player
+	
+						if (myGame.hero.gridX == desiredx && myGame.hero.gridY == desiredy)
+						{
+							let defeated = myGame.evaluateBattle(this, myGame.hero);
+							if(!defeated)
+							{
+								return false;
+							}
+							else
+							{	
+								myGame.hero.living = 0;
+								console.log("Hero defeated!");
+							}
+						}
+						
+						
+						
+					//evaluate enemies
+					for (let i = 0; i < myGame.Characters.length; i++)
+					{
+						if (this == myGame.Characters[i]) continue; //skip self
+						if (myGame.Characters[i].gridX == desiredx && myGame.Characters[i].gridY == desiredy)
+						{
+							return false;
+						}
+					}
+					
+					
+					
+					//move character
+					this.moveCharacter(desiredx, desiredy);
+					
+					
+				}
+				
+				
+				renderCharacter()
+				{
+					console.log("Inside renderCharacter()");
+					//check if HP is above 0
+					if(this.HP > 0)
+					{
+						//Render enemies
+						ctx.drawImage(this.PIC, this.X - 45, this.Y - 38);
+						this.healthBar();
+					}
+				
+				}
+				
+				moveCharacter(x, y)
+				{	
+					console.log("Inside moveCharacter()");
+					this.gridX = x;
+					this.gridY = y;
+					this.X = (x * 64);
+					this.Y = (y * 64);
+					console.log("Hero X,Y: " + this.gridX + ", " + this.gridY);
+					myGame.potion1.updateItem();
+					myGame.potion2.updateItem();
+				}
+				
+			}
+			
+			
+			//The player
+			class Player extends Character
+			{
+				constructor(x, y)
+				{
+					super();
+					this.HP = 100;
+					this.MHP = 100;
+					this.ATK = 120;
+					this.DEF = 100;
+					this.gridX = x;
+					this.gridY = y;
+					this.X = 64 * x;
+					this.Y = 64 * y;
+					this.PIC = new Image;
+					this.PIC.src = 'hero.png';
+					this.PIC.onload = ctx.drawImage(this.PIC, this.X, this.Y, 64, 64);
+
+					console.log("Hero has HP:" + this.HP + ", ATK: " + this.ATK + ", DEF: " + 
+									this.DEF + ", X,Y: " + this.gridX + ", " + this.gridY);
+					
+				}
+				
+				updateHero(x, y)
+				{
+					console.log("Inside updateHero()");
+					this.gridX += x;
+					this.gridY += y;
+					this.X += (x * 64);
+					this.Y += (y * 64);
+					console.log("Hero X,Y: " + this.gridX + ", " + this.gridY);
+					
+				}
+				
+				renderHero()
+				{
+					console.log("Inside Character Render()");
+					//check if HP is above 0
+					if(this.HP > 0)
+					{ 
+						//Render Hero
+						ctx.drawImage(this.PIC, this.X, this.Y, 64, 64);
+					}
+					this.healthBar();
+				}
+				
+			}
+			
+			//weakest enemy
+			class Enemy1 extends Character
+			{
+				constructor(x, y)
+				{
+					super();
+					this.HP = 10;
+					this.MHP = 10;
+					this.ATK = 1;
+					this.DEF = 1;
+					this.gridX = x;
+					this.gridY = y;
+					this.X = 64 * x;
+					this.Y = 64 * y;
+					this.PIC = new Image;
+					this.PIC.src = 'enemy1.png';
+					this.PIC.onload = ctx.drawImage(this.PIC, this.X, this.Y, 64, 64); 
+					
+					console.log("Enemy1 has HP:" + this.HP + ", ATK: " + this.ATK + ", DEF: " + 
+									this.DEF + ", X,Y: " + this.gridX + ", " + this.gridY);
+ 
+				}
+			}
+			
+			//medium enemy
+			class Enemy2 extends Character
+			{
+				constructor(x, y)
+				{
+					super();
+					this.HP = 80;
+					this.MHP = 80;
+					this.ATK = 100;
+					this.DEF = 80;
+					this.gridX = x;
+					this.gridY = y;
+					this.X = 64 * x;
+					this.Y = 64 * y;
+					this.PIC = new Image;
+					this.PIC.src = 'enemy2.png';
+					this.PIC.onload = ctx.drawImage(this.PIC, this.X, this.Y, 64, 64); 
+					
+					console.log("Enemy2 has HP:" + this.HP + ", ATK: " + this.ATK + ", DEF: " + 
+									this.DEF + ", X,Y: " + this.gridX + ", " + this.gridY);
+
+				}
+			}
+			
+			//strongest enemy
+			class Enemy3 extends Character
+			{
+				constructor(x, y)
+				{
+					super();
+					this.HP = 100;
+					this.MHP = 100;
+					this.ATK = 120;
+					this.DEF = 100;
+					this.gridX = x;
+					this.gridY = y;
+					this.X = 64 * x;
+					this.Y = 64 * y;
+					this.PIC = new Image;
+					this.PIC.src = 'enemy3.png';
+					this.PIC.onload = ctx.drawImage(this.PIC, this.X, this.Y, 64, 64); 
+					
+					console.log("Enemy3 has HP:" + this.HP + ", ATK: " + this.ATK + ", DEF: " + 
+									this.DEF + ", X,Y: " + this.gridX + ", " + this.gridY);
+
+				}
+			}
+			
+			
+
+		//Game map creation class
+			class Game
+			{
+				
+				constructor()
+				{
+					//draw the background
+					this.drawMap();
+					
+					//create 2d array for obstacle references
+					//0 for empty space, 1 for mountains, 2 for clouds
+					this.GameMap = [	[1, 0, 1, 1, 1, 1, 0, 0], /* row 1 */
+										[0, 0, 0, 0, 0, 0, 0, 0], /* row 2 */
+										[0, 2, 0, 0, 1, 1, 0, 0], /* row 3 */
+										[0, 2, 0, 0, 0, 1, 0, 0], /* row 4 */
+										[1, 2, 0, 2, 0, 1, 1, 1], /* row 5 */
+										[1, 0, 0, 2, 2, 0, 0, 0], /* row 6 */
+										[1, 0, 0, 0, 0, 0, 2, 2], /* row 7 */
+										[1, 0, 0, 0, 0, 0, 0, 0]  /* row 8 */
+							   /* column 1  2  3  4  5  6  7  8  */
+							  ];
+					
+					//create object list to hold the grid coordinates of every obstacle
+					this.Obstacles = []
+					
+					//loop through the 2d array map and place 
+					//loop through the rows
+					for(let i = 0; i < 8; i++)
+						{
+							//loop thorugh the columns
+							for(let j = 0; j < 8; j++)
+								{
+									//check if current value is a 1 for Mountain
+									if(this.GameMap[i][j] == 1)
+									{
+										this.Obstacles.push(new Mountain(j, i));
+									}
+									
+									//check if current value is a 1 for Mountain
+									if(this.GameMap[i][j] == 2)
+									{
+										this.Obstacles.push(new Cloud(j, i));
+									}
+								}
+						}
+						
+					
+					
+					//add the player to the map
+					console.log("adding hero");
+					this.hero = new Player(4, 6);
+					this.monster1 = new Enemy1(1, 7);
+					this.monster2 = new Enemy2(0, 3);
+					this.monster3 = new Enemy3(6, 3);
+					
+					//create object list to hold every character (every character has grid coordinates in their constructor)
+					this.Characters = []
+					//this.Characters.push(this.hero);
+					this.Characters.push(this.monster1);
+					this.Characters.push(this.monster2);
+					this.Characters.push(this.monster3);
+					
+					//add potions
+					this.potion1 = new Item(7, 7);
+					this.potion2 = new Item(1, 0);
+					
+					//draw the characters on top of the board
+					setInterval(DrawScene,100);
+					
+					
+				}
+				
+				renderAll()
+				{
+					//add the player and character to the map
+					console.log("rendering player");
+					this.hero.renderHero();
+					this.monster1.renderCharacter();
+					this.monster2.renderCharacter();
+					this.monster3.renderCharacter();
+					this.potion1.renderItem();
+					this.potion2.renderItem();
+				}
+				
+				drawMap()
+				{
+					//draw the sky
+					ctx.fillStyle = "#0FF";
+					ctx.fillRect(0,0,512,512);
+				}
+				
+				drawObstacles()
+				{
+					console.log("Redrawing the map")
+					//loop through the rows
+					for(let i = 0; i < this.Obstacles.length; i++)
+						{
+							this.Obstacles[i].render();
+							
+						}
+				}
+				
+				
+				attemptMove(actor, x, y)
+				{
+					//find out where we are moving to
+					let desiredx = actor.gridX + x;
+					let desiredy = actor.gridY + y;
+				
+					//evaluate the game borders
+					if (desiredy < MIN_Y || desiredy > MAX_Y || desiredx < MIN_X || desiredx > MAX_X)
+					{
+						// hit the edge of the map
+						return false;
+					}
+					
+					// evaluate obstacles
+					if (myGame.GameMap[desiredy][desiredx] != 0)
+					{
+						// hit an obstacle
+						return false;
+					}
+					
+					// evaluate enemies
+					for (let i = 0; i < myGame.Characters.length; i++)
+					{
+						let enemy = myGame.Characters[i];
+						if (actor == enemy) continue; // skip self
+						if (enemy.gridX == desiredx && enemy.gridY == desiredy)
+						{
+							if (actor != myGame.hero && enemy != myGame.hero) // enemies don't attack each other
+							{
+								return false;
+							}
+							
+							let defeated = myGame.evaluateBattle(actor, enemy);
+							if (!defeated)
+							{
+								return false;
+							}
+							else
+							{
+								enemy.living = 0;
+								console.log("Enemy defeated");
+							}
+						}
+					}
+					
+					//move character
+					actor.moveCharacter(desiredx, desiredy);
+					
+				}
+				
+				evaluateBattle(actor, enemy)
+				{
+					let damage = (actor.ATK - enemy.DEF);
+					if (damage < 1) damage = 1;
+					
+					enemy.HP -= damage;
+					
+					if(enemy.HP <= 0)
+					{
+						return true; // enemey defeated
+					}
+					else
+					{
+						return false; // enemy persists
+					}
+				}
+				
+				gameStatus()
+				{
+					if(myGame.hero.living == 0)
+					{
+						//You Win!!!
+						ctx.font = "30px Comic Sans MS";
+						ctx.fillStyle = "#F00";
+						ctx.textAlign = "center";
+						ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
+					}
+					if((myGame.monster1.living + myGame.monster2.living + myGame.monster3.living) == 0)
+					{
+						//Game Over!!!
+						ctx.font = "30px Comic Sans MS";
+						ctx.fillStyle = "#F00";
+						ctx.textAlign = "center";
+						ctx.fillText("~YOU WIN~", canvas.width/2, canvas.height/2);
+					}
+				}
+				
+				
+				keyUp(e)
+				{
+					e = e || window.event;
+					console.log("keyUp key code:  " + e.keyCode); 
+					console.log("keyUp event:  " + e.which); 
+					
+					
+					let keypressed = e.keyCode;
+					let keyleft = 37;
+					let keyup = 38;
+					let keyright = 39;
+					let keydown = 40;
+					
+					// determine the desired movement
+					let movementx = 0;
+					let movementy = 0;
+					switch(keypressed)
+					{
+						case keyleft:
+							movementx = -1;
+							break;
+						case keyright:
+							movementx =  1;
+							break;
+						case keyup:
+							movementy = -1;
+							break;
+						case keydown:
+							movementy =  1;
+							break;
+						default:
+							break;
+					}
+					
+					let success = myGame.attemptMove(myGame.hero, movementx, movementy);
+					
+					//DrawScene();
+					myGame.monster1.moveRandom();
+					myGame.monster2.moveRandom();
+					myGame.monster3.moveRandom();
+				}
+			}
+			
+			function DrawScene()
+				{	
+					//draw map
+					myGame.drawMap();
+					//draw obstacles
+					myGame.drawObstacles();
+					//update
+					//myGame.updateAll();
+					//Reapply Render
+					myGame.renderAll();
+					//check game status
+					myGame.gameStatus();
+				}
+		</SCRIPT>
+		<script async src='/cdn-cgi/bm/cv/669835187/api.js'></script></HEAD>
+	<BODY>
+		
+		<HEADER>
+		</HEADER>
+		
+		
+		<SECTION id="Canvas">
+		
+			<CANVAS width=512 height=512 id="myCanvas" style="border: 1px solid black;">
+				Your Web-Browser does not support Canvas
+			</CANVAS>
+			
+		</SECTION>
+		
+		<SCRIPT>
+			//var pointing to the canvas
+			var canvas = document.getElementById("myCanvas");
+			//ctx to get the 2d context to draw on
+			var ctx = canvas.getContext("2d");	
+			
+			myGame = new Game();
+			//use keyup to ensure the input for each button is only one
+			document.onkeyup = myGame.keyUp;
+		</SCRIPT>
+	<script type="text/javascript">(function(){window['__CF$cv$params']={r:'6d5724d79ccb129b',m:'wHx1ORCGgWazePjAEZSfjW9CnwR80O4tQF6aGKff9IA-1643508417-0-AdyXn2dZeJmzEyBMCMhXYeqGONXRfCXp0nCRY1Viml/SXEmbp/zpuas/yWqkFH8KnkpujXfY6FyrlW2JUJtJthi58XGU5LvENqOdgiDiI9m2BHaAbAOQPv7ozMqdVUB5y3+FLkJJ4KJQjVZ95WjGE+/fEc7VBVUGto+9r7Qlo0jxukh/BOlcxmzdE5dKOfrilYnBCkGJ4d/DZ7Z3NV3f6zI=',s:[0x01bbb21417,0x5f429b0657],}})();</script></BODY>
+</HTML>
