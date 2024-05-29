@@ -41,7 +41,7 @@ Example of Shape Drawing:
 
 
 
-![shapedrawing](https://github.com/KristerJLawlor/Computer-Graphics/assets/78580819/e6df591d-140a-41e1-9845-258e10190e3f)
+![shapedrawing](https://github.com/KristerJLawlor/Computer-Graphics/assets/78580819/5c15028a-ed57-41b4-b28d-30bce8a7d402)
 
 Example of Asteroid Navigation:
 
