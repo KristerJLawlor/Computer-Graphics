@@ -31,7 +31,7 @@ Example of 2D Game Engine:
 
 
 
-https://github.com/KristerJLawlor/Computer-Graphics/assets/78580819/f5b7edcf-5372-4844-bcbd-a5fe24da5c50
+![gameengine](https://github.com/KristerJLawlor/Computer-Graphics/assets/78580819/04d46780-13c5-4e5f-8be8-eb2ee41d6c44)
 
 Example of Shape Drawing:
 
@@ -41,7 +41,7 @@ Example of Shape Drawing:
 
 
 
-https://github.com/KristerJLawlor/Computer-Graphics/assets/78580819/82630b4e-76d5-48a5-bc2b-cb312dd9caaa
+![shapedrawing](https://github.com/KristerJLawlor/Computer-Graphics/assets/78580819/e6df591d-140a-41e1-9845-258e10190e3f)
 
 Example of Asteroid Navigation:
 
@@ -61,7 +61,8 @@ Example of Rotations and Transformations:
 
 
 
-https://github.com/KristerJLawlor/Computer-Graphics/assets/78580819/3ca9a1ab-9eae-4ed2-a4eb-49a490f14463
+![transformations](https://github.com/KristerJLawlor/Computer-Graphics/assets/78580819/1b3754db-40e3-4364-8ea0-0d08f96b9134)
+
 
 
 
